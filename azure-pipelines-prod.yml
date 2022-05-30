@@ -2,17 +2,11 @@
 # Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
-trigger:
-- main
-
-resources:
-- repo: self
-
 variables:
-- group: EPlast
+- group: EPlast-PROD
   # Container registry service connection established during pipeline creation
 - name: dockerRegistryServiceConnection
-  value: '6c4d5954-410a-4604-8404-40b91e3fedb7'
+  value: '6ed81c59-e17e-4f6e-b772-e7a2b4d0d06f'
 - name: imageRepository
   value: 'eplastweb'
 - name: containerRegistry
@@ -22,15 +16,14 @@ variables:
 - name: tag
   value: '$(Build.BuildId)'
 - name: imagePullSecret
-  value: 'eplastregistry14394d69-auth'
+  value: 'eplastregistryd27e-auth'
   # Name of the new namespace being created to deploy the PR changes.
 - name: k8sNamespaceForPR
   value: 'review-app-$(System.PullRequest.PullRequestId)'
 
   # Agent VM image name
-pool:
-  name: vmss-pipeline
-  vmImage: 'ubuntu-latest'
+- name: vmImageName
+  value: 'ubuntu-latest'
 
 stages:
 - stage: Build
@@ -39,8 +32,7 @@ stages:
   - job: Build
     displayName: Build
     pool:
-      name: vmss-pipeline
-      vmImage: 'ubuntu-latest'
+      vmImage: $(vmImageName)
     steps:
     - bash: |
         # Write your commands here
@@ -72,9 +64,8 @@ stages:
     condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     displayName: Deploy
     pool:
-      name: vmss-pipeline
-      vmImage: 'ubuntu-latest'
-    environment: 'Eplastfrontend.eplast'
+      vmImage: $(vmImageName)
+    environment: 'EPlast.eplast'
     strategy:
       runOnce:
         deploy:
@@ -90,19 +81,20 @@ stages:
           - task: KubernetesManifest@0
             displayName: Create imagePullSecret
             inputs:
-              action: createSecret
-              secretName: $(imagePullSecret)
-              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+              action: 'createSecret'
+              kubernetesServiceConnection: 'Eplast-PROD-Kubernetes'
+              secretType: 'dockerRegistry'
+              secretName: '$(imagePullSecret)'
+              dockerRegistryEndpoint: '$(dockerRegistryServiceConnection)'
 
           - task: KubernetesManifest@0
             displayName: Deploy to Kubernetes cluster
             inputs:
-              action: deploy
+              action: 'deploy'
+              kubernetesServiceConnection: 'Eplast-PROD-Kubernetes'
               manifests: |
                 $(Pipeline.Workspace)/manifests/deployment.yml
                 $(Pipeline.Workspace)/manifests/ingress-prod.yml
-              imagePullSecrets: |
-                $(imagePullSecret)
-              containers: |
-                $(containerRegistry)/$(imageRepository):$(tag)
+              containers: '$(containerRegistry)/$(imageRepository):$(tag)'
+              imagePullSecrets: '$(imagePullSecret)'
 
