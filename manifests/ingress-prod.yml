@@ -1,11 +1,11 @@
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   namespace: eplast
-  name: routing-for-eplast-client
+  name: routing-for-eplast-web
   annotations:
     kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-production
+    cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: "20m"
 spec:
   tls:
@@ -17,10 +17,15 @@ spec:
     http:
       paths:        
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: eplastweb
-          servicePort: 80
-      - path: /grafana
-        backend:
-          serviceName: prometheus-grafana
-          servicePort: 80          
+          service:
+            name: eplastweb
+            port: 
+              number: 80
+      # - path: /grafana
+      #   backend:
+      #     service:
+      #       name: prometheus-grafana
+      #       port: 
+      #         number: 80          
