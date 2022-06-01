@@ -8,6 +8,7 @@ spec:
   selector:
     matchLabels:
       app: eplastweb
+  replicas: 1
   template:
     metadata:
       labels:
@@ -19,7 +20,7 @@ spec:
           resources:
             limits:
               cpu: "100m"
-              memory: "100Mi"          
+              memory: "100Mi"         
           ports:
           - containerPort: 80
 
@@ -35,8 +36,22 @@ spec:
     selector:
         app: eplastweb
 
+# ---
+# apiVersion: autoscaling/v1
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: eplastweb-autoscaler
+#   namespace: eplast
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: eplastweb
+#   minReplicas: 1
+#   maxReplicas: 2
+#   targetCPUUtilizationPercentage: 75
 ---
-apiVersion: autoscaling/v1
+apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: eplastweb-autoscaler
@@ -48,4 +63,16 @@ spec:
     name: eplastweb
   minReplicas: 1
   maxReplicas: 2
-  targetCPUUtilizationPercentage: 75
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 50
