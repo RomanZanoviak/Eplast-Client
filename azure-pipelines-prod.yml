@@ -14,7 +14,7 @@ variables:
 - name: dockerfilePath
   value: '**/Dockerfile'
 - name: tag
-  value: '$(Build.BuildId)'
+  value: 'prod-$(Build.BuildId)'
 - name: imagePullSecret
   value: 'eplastregistryd27e-auth'
   # Name of the new namespace being created to deploy the PR changes.
